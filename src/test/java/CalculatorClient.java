@@ -3,7 +3,6 @@ import java.rmi.registry.Registry;
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
-import org.junit.jupiter.api.Disabled;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -21,6 +20,7 @@ public class CalculatorClient {
     private static final int DELAY_TEST_VALUE = 42;
     private static final String TEST_OPERATION = "min";
 
+    // Test pushing a value with a single client
     @Test
     public void testPushValueSingleClient() throws Exception {
         Registry registry = LocateRegistry.getRegistry();
@@ -29,8 +29,8 @@ public class CalculatorClient {
         assertEquals(TEST_VALUE_1, calculator.pop());
     }
 
+    // Test pushing a value with a single client
     @Test
-    @Disabled
     public void testPushValueMultipleClients() throws Exception {
         Registry registry = LocateRegistry.getRegistry();
         Calculator calculator = (Calculator) registry.lookup("Calculator");
@@ -41,6 +41,7 @@ public class CalculatorClient {
         });
     }
 
+    // Test pushing an operation with a single client
     @Test
     public void testPushOperationSingleClient() throws Exception {
         Registry registry = LocateRegistry.getRegistry();
@@ -51,8 +52,8 @@ public class CalculatorClient {
         assertEquals(Math.min(TEST_VALUE_1, TEST_VALUE_2), calculator.pop());
     }
 
+    // Test pushing operations with multiple clients
     @Test
-    @Disabled
     public void testPushOperationMultipleClients() throws Exception {
         Registry registry = LocateRegistry.getRegistry();
         Calculator calculator = (Calculator) registry.lookup("Calculator");
@@ -66,6 +67,7 @@ public class CalculatorClient {
         });
     }
 
+    // Test popping with a single client
     @Test
     public void testPopSingleClient() throws Exception {
         Registry registry = LocateRegistry.getRegistry();
@@ -74,8 +76,8 @@ public class CalculatorClient {
         assertEquals(TEST_VALUE_1, calculator.pop());
     }
 
+    // Test popping with multiple clients
     @Test
-    @Disabled
     public void testPopMultipleClients() throws Exception {
         Registry registry = LocateRegistry.getRegistry();
         Calculator calculator = (Calculator) registry.lookup("Calculator");
@@ -86,6 +88,7 @@ public class CalculatorClient {
         });
     }
 
+    // Test isEmpty with a single client
     @Test
     public void testIsEmpty() throws Exception {
         Registry registry = LocateRegistry.getRegistry();
@@ -95,6 +98,7 @@ public class CalculatorClient {
         assertFalse(calculator.isEmpty());
     }
 
+    // Test delayPop with a single client
     @Test
     public void testDelayPopSingleClient() throws Exception {
         Registry registry = LocateRegistry.getRegistry();
@@ -107,8 +111,8 @@ public class CalculatorClient {
         assertTrue(endTime - startTime >= DELAY_MILLIS);
     }
 
+    // Test delayPop with multiple clients
     @Test
-    @Disabled
     public void testDelayPopMultipleClients() throws Exception {
         Registry registry = LocateRegistry.getRegistry();
         Calculator calculator = (Calculator) registry.lookup("Calculator");
