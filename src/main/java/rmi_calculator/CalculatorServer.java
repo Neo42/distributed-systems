@@ -4,6 +4,10 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
+/**
+ * Server application for the RMI Calculator service.
+ * Sets up and publishes the Calculator service in the RMI registry.
+ */
 public class CalculatorServer {
     public static void main(String[] args) {
         try {
