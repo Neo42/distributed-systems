@@ -10,15 +10,14 @@ import java.rmi.registry.Registry;
 public class CalculatorServer {
     public static void main(String[] args) {
         try {
-            CalculatorImplementation obj = new CalculatorImplementation();
-            Calculator stub = obj;
+            Calculator stub = new CalculatorImplementation();
 
             Registry registry = LocateRegistry.getRegistry();
             registry.bind("Calculator", stub);
 
             System.out.println("Calculator Server ready");
         } catch (Exception e) {
-            System.err.println("Server exception: " + e.toString());
+            System.err.println("Server exception: " + e);
             e.printStackTrace();
         }
     }

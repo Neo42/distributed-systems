@@ -17,7 +17,7 @@ import java.util.Stack;
 public class CalculatorImplementation extends UnicastRemoteObject
         implements Calculator {
 
-    private Map<String, Stack<Integer>> clientStacks;
+    private final Map<String, Stack<Integer>> clientStacks;
 
     /**
      * Constructor for CalculatorImplementation.
