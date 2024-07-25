@@ -1,124 +1,241 @@
 package rmi_calculator;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.EmptyStackException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Stack;
 
 /**
- * Implementation of the Calculator interface for remote operations.
- * Provides stack-based calculator functionality with support for basic
- * arithmetic
- * and advanced operations like min, max, lcm, and gcd.
+ * Implementation of the Calculator interface for RMI.
+ * This class provides the actual implementation of the remote calculator
+ * operations.
+ * It manages individual stacks for each client, allowing concurrent access and
+ * operations.
  */
-public class CalculatorImplementation implements Calculator {
-    private final ThreadLocal<Stack<Integer>> clientStack = ThreadLocal
-            .withInitial(Stack::new);
+public class CalculatorImplementation extends UnicastRemoteObject
+        implements Calculator {
+
+    private Map<String, Stack<Integer>> clientStacks;
 
     /**
      * Constructor for CalculatorImplementation.
-     * Initializes the stack used for storing integer values.
+     * Initializes the clientStacks map.
+     *
+     * @throws RemoteException
+     *             if the remote object cannot be created
      */
     public CalculatorImplementation() throws RemoteException {
-        super();
+        clientStacks = new HashMap<>();
     }
 
     /**
-     * Pushes an integer value onto the stack.
+     * Creates a new stack for a client.
+     *
+     * @throws RemoteException
+     *             if the remote method call fails
+     */
+    @Override
+    public String createClientStack() throws RemoteException {
+        String clientId = getClientId();
+        clientStacks.put(clientId, new Stack<Integer>());
+        return clientId;
+    }
+
+    /**
+     * Pushes a value onto the client's stack.
      *
      * @param val
-     *            The integer value to be pushed.
+     *            The value to push
+     * @param clientId
+     *            The ID of the client
+     * @throws RemoteException
+     *             if the remote method call fails
      */
-    public void pushValue(int val) throws RemoteException {
-        clientStack.get().push(val);
+    @Override
+    public void pushValue(int val, String clientId) throws RemoteException {
+        Stack<Integer> stack = getClientStack(clientId);
+        stack.push(val);
     }
 
     /**
-     * Pushes an operation (min, max, lcm, gcd) onto the stack.
-     * Pops all values from the stack, performs the operation, and pushes the
-     * result.
+     * Performs an operation on the client's stack.
+     * Supported operations: min, max, lcm, gcd
      *
      * @param operator
-     *            The operation to be performed (min, max, lcm, gcd).
-     */
-    // Special case: Throws RemoteException if there are not enough operands on
-    // the stack
-    public void pushOperation(String operator) throws RemoteException {
-        if (isEmpty()) {
-            throw new RemoteException("Not enough operands on the stack");
-        }
-
-        List<Integer> values = new ArrayList<>();
-        while (!isEmpty() && clientStack.get().peek() instanceof Integer) {
-            values.add(pop());
-        }
-
-        int result = switch (operator.toLowerCase()) {
-            case "min" -> Collections.min(values);
-            case "max" -> Collections.max(values);
-            case "lcm" -> values.stream().reduce(1,
-                    (a, b) -> Math.abs(a * b) / gcd(a, b));
-            case "gcd" -> values.stream().reduce(0, this::gcd);
-            default -> throw new RemoteException(
-                    "Invalid operator: " + operator);
-        };
-
-        clientStack.get().push(result);
-    }
-
-    /**
-     * Calculates the greatest common divisor of two integers.
-     *
-     * @param a
-     *            First integer.
-     * @param b
-     *            Second integer.
-     * @return The greatest common divisor of a and b.
-     */
-    private int gcd(int a, int b) {
-        return b == 0 ? a : gcd(b, a % b);
-    }
-
-    /**
-     * Removes and returns the top integer from the stack.
-     *
-     * @return The top integer of the stack.
+     *            The operation to perform
+     * @param clientId
+     *            The ID of the client
      * @throws RemoteException
-     *             if the stack is empty.
+     *             if the remote method call fails or if the operation is
+     *             unsupported
      */
-    // Special case: May throw EmptyStackException if the stack is empty .
-    public int pop() throws RemoteException {
-        return clientStack.get().pop();
+    @Override
+    public void pushOperation(String operator, String clientId)
+            throws RemoteException {
+        Stack<Integer> stack = getClientStack(clientId);
+        int result;
+
+        switch (operator.toLowerCase()) {
+            case "min":
+                result = getMin(stack);
+                break;
+            case "max":
+                result = getMax(stack);
+                break;
+            case "lcm":
+                result = getLCM(stack);
+                break;
+            case "gcd":
+                result = getGCD(stack);
+                break;
+            default:
+                throw new RemoteException("Unsupported Operation.");
+        }
+
+        stack.clear();
+        stack.push(result);
     }
 
     /**
-     * Checks if the stack is empty.
-     * 
-     * @return true if the stack is empty, false otherwise.
+     * Pops and returns the top value from the client's stack.
+     *
+     * @param clientId
+     *            The ID of the client
+     * @return The top value from the stack
+     * @throws RemoteException
+     *             if the remote method call fails
      */
-    public boolean isEmpty() throws RemoteException {
-        return clientStack.get().empty();
+    @Override
+    public int pop(String clientId) throws RemoteException {
+        Stack<Integer> stack = getClientStack(clientId);
+        return stack.pop();
     }
 
     /**
-     * Removes and returns the top integer from the stack after a specified
-     * delay.
+     * Checks if the client's stack is empty.
+     *
+     * @param clientId
+     *            The ID of the client
+     * @return true if the stack is empty, false otherwise
+     * @throws RemoteException
+     *             if the remote method call fails
+     */
+    @Override
+    public boolean isEmpty(String clientId) throws RemoteException {
+        Stack<Integer> stack = getClientStack(clientId);
+        return stack.isEmpty();
+    }
+
+    /**
+     * Pops a value from the client's stack after a specified delay.
      *
      * @param millis
-     *            The delay in milliseconds before popping the element.
-     * @return The top integer of the stack after the delay.
+     *            The delay in milliseconds
+     * @param clientId
+     *            The ID of the client
+     * @return The popped value
      * @throws RemoteException
-     *             if the stack is empty or if interrupted during sleep.
+     *             if the remote method call fails or if the delay is
+     *             interrupted
      */
-    // Special case: If interrupted during sleep, throws RemoteException and
-    // preserves the interrupt status
-    public int delayPop(int millis) throws RemoteException {
+    @Override
+    public int delayPop(int millis, String clientId) throws RemoteException {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            throw new RemoteException("Delay interrupted", e);
         }
-        return pop();
+        return pop(clientId);
+    }
+
+    /**
+     * Retrieves the stack for a given client.
+     *
+     * @param clientId
+     *            The ID of the client
+     * @return The client's stack
+     * @throws RemoteException
+     *             if the client stack is not found
+     */
+    private Stack<Integer> getClientStack(String clientId)
+            throws RemoteException {
+        Stack<Integer> stack = clientStacks.get(clientId);
+        if (stack == null) {
+            throw new RemoteException(
+                    "Client stack not found. Please create a stack first.");
+        }
+        return stack;
+    }
+
+    /**
+     * Generates a unique client ID.
+     *
+     * @return A new unique client ID
+     */
+    private String getClientId() {
+        return java.util.UUID.randomUUID().toString();
+    }
+
+    /**
+     * Finds the minimum value in the stack.
+     *
+     * @param stack
+     *            The stack to search
+     * @return The minimum value in the stack
+     */
+    private int getMin(Stack<Integer> stack) {
+        return stack.stream().min(Integer::compare).get();
+    }
+
+    /**
+     * Finds the maximum value in the stack.
+     *
+     * @param stack
+     *            The stack to search
+     * @return The maximum value in the stack
+     */
+    private int getMax(Stack<Integer> stack) {
+        return stack.stream().max(Integer::compare).get();
+    }
+
+    /**
+     * Calculates the least common multiple of all values in the stack.
+     *
+     * @param stack
+     *            The stack containing the values
+     * @return The least common multiple
+     */
+    private int getLCM(Stack<Integer> stack) {
+        return stack.stream().reduce(1, (a, b) -> Math.abs(a * b) / gcd(a, b));
+    }
+
+    /**
+     * Calculates the greatest common divisor of all values in the stack.
+     *
+     * @param stack
+     *            The stack containing the values
+     * @return The greatest common divisor
+     * @throws EmptyStackException
+     *             if the stack is empty
+     */
+    private int getGCD(Stack<Integer> stack) {
+        return stack.stream().reduce(this::gcd)
+                .orElseThrow(() -> new EmptyStackException());
+    }
+
+    /**
+     * Calculates the greatest common divisor of two numbers.
+     *
+     * @param a
+     *            The first number
+     * @param b
+     *            The second number
+     * @return The greatest common divisor of a and b
+     */
+    private int gcd(int a, int b) {
+        return b == 0 ? a : gcd(b, a % b);
     }
 }

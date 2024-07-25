@@ -2,7 +2,6 @@ package rmi_calculator;
 
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 
 /**
  * Server application for the RMI Calculator service.
@@ -12,10 +11,8 @@ public class CalculatorServer {
     public static void main(String[] args) {
         try {
             CalculatorImplementation obj = new CalculatorImplementation();
-            Calculator stub = (Calculator) UnicastRemoteObject.exportObject(obj,
-                    0);
+            Calculator stub = obj;
 
-            // Bind the remote object's stub in the registry, 1099 by default
             Registry registry = LocateRegistry.getRegistry();
             registry.bind("Calculator", stub);
 
