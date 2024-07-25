@@ -11,7 +11,6 @@ import static org.junit.Assert.assertTrue;
 
 public class CalculatorClientTest {
     private Calculator calculator;
-    private String clientId;
 
     private static final int CLIENT_COUNT = 4;
     private static final int DELAY_MILLIS = 2000;
@@ -31,7 +30,6 @@ public class CalculatorClientTest {
     public void setUp() throws Exception {
         Registry registry = LocateRegistry.getRegistry("localhost", 1099);
         calculator = (Calculator) registry.lookup("Calculator");
-        clientId = calculator.createClientStack();
     }
 
     /**
@@ -40,6 +38,7 @@ public class CalculatorClientTest {
      */
     @Test
     public void testPushValueSingleClient() throws Exception {
+        String clientId = calculator.createClientStack();
         calculator.pushValue(TEST_VALUE_1, clientId);
         calculator.pushValue(TEST_VALUE_2, clientId);
         assertEquals(TEST_VALUE_2, calculator.pop(clientId));
@@ -81,6 +80,7 @@ public class CalculatorClientTest {
      */
     @Test
     public void testPushOperationSingleClient() throws Exception {
+        String clientId = calculator.createClientStack();
         calculator.pushValue(TEST_VALUE_1, clientId);
         calculator.pushValue(TEST_VALUE_2, clientId);
         calculator.pushOperation(TEST_OPERATION_1, clientId);
@@ -101,15 +101,15 @@ public class CalculatorClientTest {
         for (int clientIndex = 0; clientIndex < CLIENT_COUNT; clientIndex++) {
             new Thread(() -> {
                 try {
-                    String threadClientId = calculator.createClientStack();
+                    String clientId = calculator.createClientStack();
                     calculator.pushValue(TEST_VALUE_3,
-                            threadClientId);
+                            clientId);
                     calculator.pushValue(TEST_VALUE_4,
-                            threadClientId);
-                    calculator.pushOperation(TEST_OPERATION_2, threadClientId);
+                            clientId);
+                    calculator.pushOperation(TEST_OPERATION_2, clientId);
                     assertEquals(Math.max(TEST_VALUE_3, TEST_VALUE_4),
-                            calculator.pop(threadClientId));
-                    assertTrue(calculator.isEmpty(threadClientId));
+                            calculator.pop(clientId));
+                    assertTrue(calculator.isEmpty(clientId));
                     latch.countDown();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -126,6 +126,7 @@ public class CalculatorClientTest {
      */
     @Test
     public void testPopSingleClient() throws Exception {
+        String clientId = calculator.createClientStack();
         calculator.pushValue(TEST_VALUE_1, clientId);
         calculator.pushValue(TEST_VALUE_2, clientId);
         assertEquals(TEST_VALUE_2, calculator.pop(clientId));
@@ -144,12 +145,12 @@ public class CalculatorClientTest {
         for (int clientIndex = 0; clientIndex < CLIENT_COUNT; clientIndex++) {
             new Thread(() -> {
                 try {
-                    String threadClientId = calculator.createClientStack();
-                    calculator.pushValue(TEST_VALUE_3, threadClientId);
-                    calculator.pushValue(TEST_VALUE_4, threadClientId);
-                    assertEquals(TEST_VALUE_4, calculator.pop(threadClientId));
-                    assertEquals(TEST_VALUE_3, calculator.pop(threadClientId));
-                    assertTrue(calculator.isEmpty(threadClientId));
+                    String clientId = calculator.createClientStack();
+                    calculator.pushValue(TEST_VALUE_3, clientId);
+                    calculator.pushValue(TEST_VALUE_4, clientId);
+                    assertEquals(TEST_VALUE_4, calculator.pop(clientId));
+                    assertEquals(TEST_VALUE_3, calculator.pop(clientId));
+                    assertTrue(calculator.isEmpty(clientId));
                     latch.countDown();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -166,6 +167,7 @@ public class CalculatorClientTest {
      */
     @Test
     public void testDelayPopSingleClient() throws Exception {
+        String clientId = calculator.createClientStack();
         calculator.pushValue(DELAY_TEST_VALUE, clientId);
         long startTime = System.currentTimeMillis();
         assertEquals(DELAY_TEST_VALUE,
@@ -186,14 +188,14 @@ public class CalculatorClientTest {
         for (int clientIndex = 0; clientIndex < CLIENT_COUNT; clientIndex++) {
             new Thread(() -> {
                 try {
-                    String threadClientId = calculator.createClientStack();
-                    calculator.pushValue(DELAY_TEST_VALUE, threadClientId);
+                    String clientId = calculator.createClientStack();
+                    calculator.pushValue(DELAY_TEST_VALUE, clientId);
                     long startTime = System.currentTimeMillis();
                     assertEquals(DELAY_TEST_VALUE,
-                            calculator.delayPop(DELAY_MILLIS, threadClientId));
+                            calculator.delayPop(DELAY_MILLIS, clientId));
                     long endTime = System.currentTimeMillis();
                     assertTrue(endTime - startTime >= DELAY_MILLIS);
-                    assertTrue(calculator.isEmpty(threadClientId));
+                    assertTrue(calculator.isEmpty(clientId));
                     latch.countDown();
                 } catch (Exception e) {
                     e.printStackTrace();
