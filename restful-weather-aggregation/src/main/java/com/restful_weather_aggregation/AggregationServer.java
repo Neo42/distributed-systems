@@ -31,7 +31,7 @@ public class AggregationServer {
     this.port = port;
     this.weatherDataMap = new ConcurrentHashMap<>();
     this.lastUpdateTime = new ConcurrentHashMap<>();
-    this.recentUpdates = new PriorityQueue<>(Comparator.comparingInt(WeatherData::getLamportClock).reversed());
+    this.recentUpdates = new PriorityQueue<>(Comparator.comparingInt(WeatherData::getLamportClock));
     this.running = false;
     this.lamportClock = 0;
     this.logger = Logger.getLogger(AggregationServer.class.getName());
@@ -183,16 +183,12 @@ public class AggregationServer {
       sendResponse(out, "204 No Content", null);
     } else {
       logger.info("Weather data available. Sending 200 OK with data.");
-      List<WeatherData> sortedData = new ArrayList<>(weatherDataMap.values());
+      List<WeatherData> sortedData = new ArrayList<>(recentUpdates);
       sortedData.sort(Comparator.comparingInt(WeatherData::getLamportClock).reversed());
 
       StringBuilder jsonResponse = new StringBuilder("[");
-      int count = 0;
       for (WeatherData data : sortedData) {
-        if (count >= MAX_STORED_UPDATES)
-          break;
         jsonResponse.append(data.toJson()).append(",");
-        count++;
       }
       if (jsonResponse.charAt(jsonResponse.length() - 1) == ',') {
         jsonResponse.setLength(jsonResponse.length() - 1); // Remove last comma
@@ -243,10 +239,11 @@ public class AggregationServer {
           recentUpdates.removeIf(data -> data.getId().equals(stationId));
           recentUpdates.offer(weatherData);
 
-          while (recentUpdates.size() > MAX_STORED_UPDATES) {
+          if (recentUpdates.size() > MAX_STORED_UPDATES) {
             WeatherData oldestUpdate = recentUpdates.poll();
             if (oldestUpdate != null) {
-              // Don't remove from weatherDataMap, just from recentUpdates
+              weatherDataMap.remove(oldestUpdate.getId());
+              lastUpdateTime.remove(oldestUpdate.getId());
             }
           }
         }
@@ -263,7 +260,7 @@ public class AggregationServer {
       }
     } catch (JsonParseException | IllegalArgumentException e) {
       logger.warning("Invalid input data: " + e.getMessage());
-      sendResponse(out, "400 Bad Request", "Invalid input data: " + e.getMessage());
+      sendResponse(out, "500 Internal Server Error", "Invalid input data: " + e.getMessage());
     } catch (Exception e) {
       logger.severe("Error processing request: " + e.getMessage());
       sendResponse(out, "500 Internal Server Error", "Error processing request: " + e.getMessage());
