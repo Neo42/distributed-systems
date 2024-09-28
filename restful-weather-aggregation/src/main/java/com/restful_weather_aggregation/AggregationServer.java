@@ -66,7 +66,7 @@ public class AggregationServer {
           weatherDataMap.put(data.getId(), data);
           lastUpdateTime.put(data.getId(), System.currentTimeMillis());
           recentUpdates.offer(data);
-        } catch (IllegalArgumentException | JsonParseException e) {
+        } catch (IllegalArgumentException e) {
           logger.warning("Invalid data in storage file: " + e.getMessage());
         }
       }

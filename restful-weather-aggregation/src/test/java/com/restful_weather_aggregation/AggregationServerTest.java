@@ -241,6 +241,34 @@ public class AggregationServerTest {
   }
 
   /**
+   * Test if the server correctly handles an invalid request method.
+   */
+  @Test
+  public void testInvalidRequestMethod() throws IOException {
+    String invalidRequest = "POST /weather.json HTTP/1.1\r\n\r\n";
+    String response = sendRequest(invalidRequest);
+
+    System.out.println("Invalid method response: " + response); // Add this line for debugging
+
+    assertTrue(response.contains("HTTP/1.1 400 Bad Request"),
+        "Server should return 400 Bad Request for an invalid request method. Actual response: " + response);
+  }
+
+  /**
+   * Test if the server correctly handles an invalid request format.
+   */
+  @Test
+  public void testInvalidRequestFormat() throws IOException {
+    String invalidRequest = "GET /invalid_endpoint HTTP/1.1\r\n\r\n";
+    String response = sendRequest(invalidRequest);
+
+    System.out.println("Invalid format response: " + response); // Add this line for debugging
+
+    assertTrue(response.contains("HTTP/1.1 400 Bad Request"),
+        "Server should return 400 Bad Request for an invalid request format. Actual response: " + response);
+  }
+
+  /**
    * Test if the server correctly recovers from a simulated crash.
    */
   @Test
