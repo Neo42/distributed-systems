@@ -6,15 +6,14 @@ import java.util.Map;
 public class WeatherData {
   private String id;
   private String name;
-
-  private Map<String, Object> data;
   private int lamportClock;
+  private Map<String, Object> data;
 
   public WeatherData(String id, String name) {
     this.id = id;
     this.name = name;
-    this.data = new HashMap<>();
     this.lamportClock = 0;
+    this.data = new HashMap<>();
   }
 
   public String getId() {
@@ -33,110 +32,12 @@ public class WeatherData {
     this.lamportClock = lamportClock;
   }
 
+  public Map<String, Object> getData() {
+    return data;
+  }
+
   public void addData(String key, Object value) {
     data.put(key, value);
-  }
-
-  public static WeatherData fromInputFormat(String input) throws IllegalArgumentException, JsonParseException {
-    input = input.trim();
-    if (!input.startsWith("{") || !input.endsWith("}")) {
-      throw new JsonParseException("Invalid JSON format: must start with '{' and end with '}'");
-    }
-
-    String[] parts = input.substring(1, input.length() - 1).split(",");
-    WeatherData wd = null;
-
-    for (String part : parts) {
-      String[] keyValue = part.split(":", 2);
-      if (keyValue.length != 2) {
-        throw new JsonParseException("Invalid key-value pair: " + part);
-      }
-
-      String key = keyValue[0].trim().replace("\"", "");
-      String value = keyValue[1].trim().replace("\"", "");
-
-      if (value.isEmpty()) {
-        throw new JsonParseException("Empty value for key: " + key);
-      }
-
-      switch (key) {
-        case "id":
-          wd = new WeatherData(value, "");
-          break;
-        case "name":
-          if (wd == null)
-            throw new JsonParseException("'id' must come before 'name'");
-          wd.name = value;
-          break;
-        case "local_date_time_full":
-          wd.addData(key, value); // Store as string without parsing
-          break;
-        default:
-          if (wd == null)
-            throw new JsonParseException("'id' and 'name' must come before other data");
-          try {
-            double numericValue = Double.parseDouble(value);
-            wd.addData(key, numericValue);
-          } catch (NumberFormatException e) {
-            wd.addData(key, value);
-          }
-      }
-    }
-
-    if (wd == null) {
-      throw new JsonParseException("Missing 'id' in JSON data");
-    }
-
-    return wd;
-  }
-
-  public static WeatherData fromStorageFormat(String storageString)
-      throws IllegalArgumentException, JsonParseException {
-    String[] parts = storageString.split(",");
-    WeatherData wd = null;
-
-    for (String part : parts) {
-      String[] keyValue = part.split(":", 2);
-      if (keyValue.length != 2) {
-        throw new IllegalArgumentException("Invalid key-value pair: " + part);
-      }
-
-      String key = keyValue[0].trim();
-      String value = keyValue[1].trim();
-
-      if (wd == null) {
-        if (!key.equals("id")) {
-          throw new IllegalArgumentException("First key must be 'id'");
-        }
-        wd = new WeatherData(value, "");
-      } else {
-        switch (key) {
-          case "name":
-            wd.name = value;
-            break;
-          case "lamportClock":
-            wd.setLamportClock(Integer.parseInt(value));
-            break;
-          default:
-            if (key.equals("local_date_time_full")) {
-              wd.addData(key, value);
-            } else {
-              try {
-                double numericValue = Double.parseDouble(value);
-                wd.addData(key, numericValue);
-              } catch (NumberFormatException e) {
-                wd.addData(key, value);
-              }
-            }
-        }
-      }
-    }
-
-    if (wd == null) {
-      throw new IllegalArgumentException("Missing 'id' in storage string");
-    }
-
-    return wd;
   }
 
   public String toStorageFormat() {
@@ -150,23 +51,41 @@ public class WeatherData {
     return sb.toString();
   }
 
-  public String toJson() {
-    StringBuilder json = new StringBuilder("{");
-    json.append("\"id\":\"").append(id).append("\",");
-    json.append("\"name\":\"").append(name).append("\",");
-    json.append("\"lamportClock\":").append(lamportClock).append(",");
-    for (Map.Entry<String, Object> entry : data.entrySet()) {
-      json.append("\"").append(entry.getKey()).append("\":");
-      if (entry.getValue() instanceof String || entry.getKey().equals("local_date_time_full")) {
-        json.append("\"").append(entry.getValue()).append("\",");
+  public static WeatherData fromStorageFormat(String storageString) throws IllegalArgumentException {
+    String[] parts = storageString.split(",");
+    WeatherData wd = null;
+    for (String part : parts) {
+      String[] keyValue = part.split(":");
+      if (keyValue.length != 2) {
+        throw new IllegalArgumentException("Invalid storage format");
+      }
+      String key = keyValue[0];
+      String value = keyValue[1];
+      if (key.equals("id")) {
+        wd = new WeatherData(value, null);
+      } else if (key.equals("name")) {
+        wd.name = value;
+      } else if (key.equals("lamportClock")) {
+        wd.lamportClock = Integer.parseInt(value);
       } else {
-        json.append(entry.getValue()).append(",");
+        try {
+          wd.addData(key, Double.parseDouble(value));
+        } catch (NumberFormatException e) {
+          wd.addData(key, value);
+        }
       }
     }
-    if (json.charAt(json.length() - 1) == ',') {
-      json.setLength(json.length() - 1); // Remove last comma
+    if (wd == null) {
+      throw new IllegalArgumentException("Missing 'id' in storage string");
     }
-    json.append("}");
-    return json.toString();
+    return wd;
+  }
+
+  public String toJson() {
+    return JsonParser.toJson(this);
+  }
+
+  public static WeatherData fromInputFormat(String input) throws JsonParseException {
+    return JsonParser.fromJson(input);
   }
 }

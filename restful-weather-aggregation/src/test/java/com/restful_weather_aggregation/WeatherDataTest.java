@@ -28,7 +28,7 @@ public class WeatherDataTest {
     wd.addData("air_temp", 23.5);
     wd.addData("wind_speed", "10km/h");
     String expected = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"lamportClock\":0,\"air_temp\":23.5,\"wind_speed\":\"10km/h\"}";
-    assertEquals(expected, wd.toJson());
+    assertEquals(new JSONObject(expected).toString(), new JSONObject(wd.toJson()).toString());
   }
 
   @Test
@@ -38,7 +38,7 @@ public class WeatherDataTest {
     assertEquals("IDS60901", wd.getId());
     assertEquals("Adelaide", wd.getName());
     String expected = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"lamportClock\":0,\"air_temp\":23.5,\"wind_speed\":\"10km/h\"}";
-    assertEquals(expected, wd.toJson());
+    assertEquals(new JSONObject(expected).toString(), new JSONObject(wd.toJson()).toString());
   }
 
   @Test
@@ -48,14 +48,14 @@ public class WeatherDataTest {
   }
 
   @Test
-  public void testFromStorageFormat() throws JsonParseException {
+  public void testFromStorageFormat() {
     String storageString = "id:IDS60901,name:Adelaide,lamportClock:5,air_temp:23.5,wind_speed:10km/h";
     WeatherData wd = WeatherData.fromStorageFormat(storageString);
     assertEquals("IDS60901", wd.getId());
     assertEquals("Adelaide", wd.getName());
     assertEquals(5, wd.getLamportClock());
     String expected = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"lamportClock\":5,\"air_temp\":23.5,\"wind_speed\":\"10km/h\"}";
-    assertEquals(expected, wd.toJson());
+    assertEquals(new JSONObject(expected).toString(), new JSONObject(wd.toJson()).toString());
   }
 
   @Test
@@ -75,14 +75,14 @@ public class WeatherDataTest {
     wd.addData("air_temp", 23.5);
     wd.addData("wind_speed", "10km/h");
     String expected = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"lamportClock\":3,\"air_temp\":23.5,\"wind_speed\":\"10km/h\"}";
-    assertEquals(expected, wd.toJson());
+    assertEquals(new JSONObject(expected).toString(), new JSONObject(wd.toJson()).toString());
   }
 
   @Test
   public void testToJson_EmptyData() {
     WeatherData wd = new WeatherData("IDS60901", "Adelaide");
     String expected = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"lamportClock\":0}";
-    assertEquals(expected, wd.toJson());
+    assertEquals(new JSONObject(expected).toString(), new JSONObject(wd.toJson()).toString());
   }
 
   @Test
