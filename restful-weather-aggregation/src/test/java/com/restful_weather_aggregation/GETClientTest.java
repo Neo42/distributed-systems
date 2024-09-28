@@ -98,7 +98,9 @@ public class GETClientTest {
 
     getClient.sendGetRequest(mockConnection);
 
-    String expectedOutput = "id: IDS60901\nname: Adelaide\nair_temp: 23.5\n";
+    String expectedOutput = "id: IDS60901\n" +
+        "name: Adelaide\n" +
+        "air_temp: 23.5\n";
     assertEquals(expectedOutput, outputStreamCaptor.toString());
   }
 

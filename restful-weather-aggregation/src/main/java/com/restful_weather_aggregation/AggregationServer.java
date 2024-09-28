@@ -12,9 +12,9 @@ public class AggregationServer {
   private static final int DEFAULT_PORT = 4567;
   private static final int DATA_EXPIRATION_SECONDS = 30;
   private static final int MAX_STORED_UPDATES = 20;
-  private static final String STORAGE_FILE = "weather_data.txt";
-  private static final String TEMP_FILE = "weather_data_temp.txt";
-  private static final String LOG_FILE = "weather_data.log";
+  private static final String STORAGE_FILE = "aggregation_server_data.txt";
+  private static final String TEMP_FILE = "aggregation_server_data_temp.txt";
+  private static final String LOG_FILE = "aggregation_server_data.log";
 
   private final int port;
   private final Map<String, WeatherData> weatherDataMap;

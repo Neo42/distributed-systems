@@ -29,7 +29,7 @@ public class AggregationServerTest {
   private static final int MAX_STORED_UPDATES = 20;
   private static final double BASE_TEMPERATURE = 20.0;
   private static final String WEATHER_ENDPOINT = "/weather.json";
-  private static final String STORAGE_FILE = "weather_data.txt";
+  private static final String STORAGE_FILE = "aggregation_server_data.txt";
   private static final String HTTP_GET = "GET";
   private static final String HTTP_PUT = "PUT";
   private static final String HTTP_VERSION = "HTTP/1.1";
