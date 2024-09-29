@@ -2,11 +2,7 @@ package com.restful_weather_aggregation;
 
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.io.*;
@@ -24,6 +20,11 @@ public class ContentServerTest {
   private static final String TEST_FILE_PATH = "content_server_data.txt";
   private ContentServer contentServer;
 
+  /**
+   * Set up the test environment before each test.
+   * 
+   * @throws IOException if an error occurs while setting up the test environment.
+   */
   @BeforeEach
   public void setUp() throws IOException {
     String sampleData = "id:IDS60901\n" +
@@ -47,11 +48,22 @@ public class ContentServerTest {
     contentServer = new ContentServer(TEST_SERVER_URL, TEST_FILE_PATH);
   }
 
+  /**
+   * Clean up the test environment after each test.
+   * 
+   * @throws IOException if an error occurs while cleaning up the test
+   *                     environment.
+   */
   @AfterEach
   public void tearDown() throws IOException {
     Files.deleteIfExists(Paths.get(TEST_FILE_PATH));
   }
 
+  /**
+   * Test the readWeatherDataFromFile method.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
   @Test
   public void testReadWeatherDataFromFile() throws Exception {
     Method readWeatherDataFromFile = ContentServer.class.getDeclaredMethod("readWeatherDataFromFile");
@@ -61,6 +73,11 @@ public class ContentServerTest {
     assertTrue(data.contains("id:IDS60901"));
   }
 
+  /**
+   * Test the parseWeatherData method.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
   @Test
   public void testParseWeatherData() throws Exception {
     Method parseWeatherData = ContentServer.class.getDeclaredMethod("parseWeatherData", String.class);
@@ -77,6 +94,11 @@ public class ContentServerTest {
     assertEquals("23.5", weatherData.get("air_temp"));
   }
 
+  /**
+   * Test the parseWeatherData method with missing id.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
   @Test
   public void testParseWeatherDataMissingId() throws Exception {
     Method parseWeatherData = ContentServer.class.getDeclaredMethod("parseWeatherData", String.class);
@@ -91,6 +113,11 @@ public class ContentServerTest {
     }
   }
 
+  /**
+   * Test the convertToJSON method.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
   @Test
   public void testConvertToJSON() throws Exception {
     Method convertToJSON = ContentServer.class.getDeclaredMethod("convertToJSON", Map.class);
@@ -102,9 +129,14 @@ public class ContentServerTest {
     String json = (String) convertToJSON.invoke(contentServer, weatherData);
     assertTrue(json.contains("\"id\":\"IDS60901\""));
     assertTrue(json.contains("\"name\":\"Adelaide\""));
-    assertTrue(json.contains("\"air_temp\":\"23.5\""));
+    assertTrue(json.contains("\"air_temp\":23.5"));
   }
 
+  /**
+   * Test the sendPutRequest method.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
   @Test
   public void testSendPutRequest() throws Exception {
     String jsonData = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"air_temp\":\"23.5\"}";
@@ -123,6 +155,11 @@ public class ContentServerTest {
     verify(mockConnection).getResponseCode();
   }
 
+  /**
+   * Test the incrementLamportClock method.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
   @Test
   public void testLamportClockImplementation() {
     int initialClock = contentServer.getLamportClock();
@@ -149,6 +186,11 @@ public class ContentServerTest {
     verify(spyContentServer, times(2)).sendPutRequest(any(HttpURLConnection.class), anyString());
   }
 
+  /**
+   * Test the invalid data handling.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
   @Test
   public void testInvalidDataHandling() throws Exception {
     Files.write(Paths.get(TEST_FILE_PATH), "InvalidData".getBytes());
@@ -163,6 +205,11 @@ public class ContentServerTest {
     }
   }
 
+  /**
+   * Test the different HTTP response codes.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
   @Test
   public void testDifferentHttpResponseCodes() throws Exception {
     ContentServer spyContentServer = spy(contentServer);
@@ -184,6 +231,11 @@ public class ContentServerTest {
     verify(mockConnection, times(4)).getResponseCode();
   }
 
+  /**
+   * Test the createConnection method.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
   @Test
   public void testCreateConnection() throws Exception {
     Method createConnection = ContentServer.class.getDeclaredMethod("createConnection");
@@ -196,5 +248,130 @@ public class ContentServerTest {
     assertEquals("ATOMClient/1/0", connection.getRequestProperty("User-Agent"));
     assertNotNull(connection.getRequestProperty("Lamport-Clock"));
     assertTrue(connection.getDoOutput());
+  }
+
+  @Test
+  public void testLamportClockInitialization() {
+    assertEquals(0, contentServer.getLamportClock(), "Lamport clock should be initialized to 0");
+  }
+
+  /**
+   * Test the lamport clock increment on local event.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
+  @Test
+  public void testLamportClockIncrementOnLocalEvent() throws Exception {
+    Method convertToJSON = ContentServer.class.getDeclaredMethod("convertToJSON", Map.class);
+    convertToJSON.setAccessible(true);
+
+    int initialClock = contentServer.getLamportClock();
+    Map<String, String> weatherData = new HashMap<>();
+    weatherData.put("id", "IDS60901");
+    weatherData.put("name", "Adelaide");
+
+    convertToJSON.invoke(contentServer, weatherData);
+
+    assertEquals(initialClock + 1, contentServer.getLamportClock(), "Lamport clock should increment on local event");
+  }
+
+  /**
+   * Test the lamport clock increment before sending message.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
+  @Test
+  public void testLamportClockIncrementBeforeSendingMessage() throws Exception {
+    HttpURLConnection mockConnection = mock(HttpURLConnection.class);
+    OutputStream mockOutputStream = mock(OutputStream.class);
+    when(mockConnection.getOutputStream()).thenReturn(mockOutputStream);
+    when(mockConnection.getResponseCode()).thenReturn(201);
+
+    int initialClock = contentServer.getLamportClock();
+    contentServer.sendPutRequest(mockConnection, "{}");
+
+    assertTrue(contentServer.getLamportClock() > initialClock, "Lamport clock should increment before sending message");
+  }
+
+  /**
+   * Test the lamport clock update on receiving message.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
+  @Test
+  public void testLamportClockUpdateOnReceivingMessage() throws Exception {
+    HttpURLConnection mockConnection = mock(HttpURLConnection.class);
+    OutputStream mockOutputStream = mock(OutputStream.class);
+    when(mockConnection.getOutputStream()).thenReturn(mockOutputStream);
+    when(mockConnection.getResponseCode()).thenReturn(201);
+    when(mockConnection.getHeaderField("Lamport-Clock")).thenReturn("5");
+
+    int initialClock = contentServer.getLamportClock();
+    contentServer.sendPutRequest(mockConnection, "{}");
+
+    assertTrue(contentServer.getLamportClock() > initialClock, "Lamport clock should update on receiving message");
+    assertTrue(contentServer.getLamportClock() > 5, "Lamport clock should be greater than received clock");
+  }
+
+  /**
+   * Test the lamport clock consistency.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
+  @Test
+  public void testLamportClockConsistency() throws Exception {
+    ContentServer spyContentServer = spy(contentServer);
+    HttpURLConnection mockConnection = mock(HttpURLConnection.class);
+    OutputStream mockOutputStream = mock(OutputStream.class);
+
+    when(mockConnection.getOutputStream()).thenReturn(mockOutputStream);
+    when(mockConnection.getResponseCode()).thenReturn(201);
+    when(mockConnection.getHeaderField("Lamport-Clock")).thenReturn("10");
+    when(mockConnection.getHeaderField("Lamport-Clock")).thenReturn("20");
+    when(mockConnection.getHeaderField("Lamport-Clock")).thenReturn("30");
+
+    doReturn(mockConnection).when(spyContentServer).createConnection();
+    doNothing().when(spyContentServer).verifyUploadedData(any(HttpURLConnection.class), anyMap());
+
+    int initialClock = spyContentServer.getLamportClock();
+    spyContentServer.uploadData();
+    int finalClock = spyContentServer.getLamportClock();
+
+    // Check that the Lamport clock has incremented
+    assertTrue(finalClock > initialClock, "Lamport clock should increase during uploadData");
+
+    // Check that the final clock is greater than the highest received clock
+    assertTrue(finalClock > 30, "Final Lamport clock should be greater than all received clocks");
+
+    // Verify that sendPutRequest was called, which internally updates the clock
+    verify(spyContentServer, times(1)).sendPutRequest(any(HttpURLConnection.class), anyString());
+
+    // Verify that the clock was incremented at least 5 times
+    // (start, parse, convert, send, receive)
+    assertTrue(finalClock >= initialClock + 5, "Lamport clock should increment at least 5 times");
+  }
+
+  /**
+   * Test the lamport clock increment in the uploadData method.
+   * 
+   * @throws Exception if an error occurs while testing the method.
+   */
+  @Test
+  public void testLamportClockInUploadDataMethod() throws Exception {
+    ContentServer spyContentServer = spy(contentServer);
+    HttpURLConnection mockConnection = mock(HttpURLConnection.class);
+    OutputStream mockOutputStream = mock(OutputStream.class);
+
+    when(mockConnection.getOutputStream()).thenReturn(mockOutputStream);
+    when(mockConnection.getResponseCode()).thenReturn(201);
+
+    doReturn(mockConnection).when(spyContentServer).createConnection();
+    doNothing().when(spyContentServer).verifyUploadedData(any(HttpURLConnection.class), anyMap());
+
+    int initialClock = spyContentServer.getLamportClock();
+    spyContentServer.uploadData();
+
+    assertTrue(spyContentServer.getLamportClock() > initialClock,
+        "Lamport clock should increment multiple times during uploadData");
   }
 }

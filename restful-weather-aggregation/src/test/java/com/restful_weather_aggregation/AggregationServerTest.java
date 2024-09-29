@@ -10,6 +10,8 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,6 +43,11 @@ public class AggregationServerTest {
   /**
    * Set up the test environment before each test.
    * Initializes the server and creates a client socket.
+   * 
+   * @throws IOException
+   * @throws InterruptedException
+   * @throws TimeoutException
+   * @throws JsonParseException
    */
   @BeforeEach
   public void setUp() throws IOException, InterruptedException, TimeoutException, JsonParseException {
@@ -67,18 +74,20 @@ public class AggregationServerTest {
   /**
    * Clean up the test environment after each test.
    * Closes the client socket and shuts down the server.
+   * 
+   * @throws IOException
+   * @throws InterruptedException
    */
   @AfterEach
-  public void tearDown() throws IOException {
+  public void tearDown() throws IOException, InterruptedException {
     if (server != null) {
       server.stop();
+      // Wait for the server to fully stop
+      Thread.sleep(2000);
+      server = null; // Ensure the server instance is garbage collected
     }
-    // Wait for the server to fully stop
-    try {
-      Thread.sleep(1000);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+    // Delete the storage file to ensure a clean state for the next test
+    Files.deleteIfExists(Paths.get(STORAGE_FILE));
   }
 
   /**
@@ -91,13 +100,15 @@ public class AggregationServerTest {
 
   /**
    * Test if the server correctly handles a GET request when no data is available.
+   * 
+   * @throws IOException
    */
   @Test
   public void testGetRequestWithNoData() throws IOException {
     String getRequest = createGetRequest();
     String response = sendRequest(getRequest);
 
-    System.out.println("Actual response: " + response); // Add this line for debugging
+    System.out.println("Actual response: " + response);
 
     assertTrue(response.contains(HTTP_VERSION + " 204 No Content"),
         "Server should return 204 No Content when no data is available. Actual response: " + response);
@@ -106,6 +117,8 @@ public class AggregationServerTest {
   /**
    * Test if the server correctly handles a PUT request, create a storage file and
    * stores the data.
+   * 
+   * @throws IOException
    */
   @Test
   public void testPutRequest() throws IOException {
@@ -113,7 +126,7 @@ public class AggregationServerTest {
     String putRequest = createPutRequest(jsonData);
 
     String response = sendRequest(putRequest);
-    System.out.println("PUT Response: " + response); // Add this line for debugging
+    System.out.println("PUT Response: " + response);
     assertTrue(response.contains(HTTP_VERSION + " 201 Created"),
         "Server should return 201 Created for a successful PUT request. Actual response: " + response);
 
@@ -126,6 +139,8 @@ public class AggregationServerTest {
   /**
    * Test if the server correctly handles subsequent PUT requests with a 200 OK
    * response.
+   * 
+   * @throws IOException
    */
   @Test
   public void testSubsequentPutRequests() throws IOException {
@@ -147,6 +162,8 @@ public class AggregationServerTest {
 
   /**
    * Test if the server correctly handles a GET request after data has been PUT.
+   * 
+   * @throws IOException
    */
   @Test
   public void testGetRequestAfterPut() throws IOException {
@@ -163,6 +180,9 @@ public class AggregationServerTest {
 
   /**
    * Test if the server correctly removes data from inactive content servers.
+   * 
+   * @throws InterruptedException
+   * @throws IOException
    */
   @Test
   public void testDataExpirationAfterTimeout() throws InterruptedException, IOException {
@@ -217,6 +237,9 @@ public class AggregationServerTest {
 
   /**
    * Test if the server correctly implements Lamport clocks for request ordering.
+   * 
+   * @throws IOException
+   * @throws InterruptedException
    */
   @Test
   public void testLamportClockOrdering() throws IOException, InterruptedException {
@@ -242,13 +265,15 @@ public class AggregationServerTest {
 
   /**
    * Test if the server correctly handles an invalid request method.
+   * 
+   * @throws IOException
    */
   @Test
   public void testInvalidRequestMethod() throws IOException {
     String invalidRequest = "POST /weather.json HTTP/1.1\r\n\r\n";
     String response = sendRequest(invalidRequest);
 
-    System.out.println("Invalid method response: " + response); // Add this line for debugging
+    System.out.println("Invalid method response: " + response);
 
     assertTrue(response.contains("HTTP/1.1 400 Bad Request"),
         "Server should return 400 Bad Request for an invalid request method. Actual response: " + response);
@@ -256,13 +281,15 @@ public class AggregationServerTest {
 
   /**
    * Test if the server correctly handles an invalid request format.
+   * 
+   * @throws IOException
    */
   @Test
   public void testInvalidRequestFormat() throws IOException {
     String invalidRequest = "GET /invalid_endpoint HTTP/1.1\r\n\r\n";
     String response = sendRequest(invalidRequest);
 
-    System.out.println("Invalid format response: " + response); // Add this line for debugging
+    System.out.println("Invalid format response: " + response);
 
     assertTrue(response.contains("HTTP/1.1 400 Bad Request"),
         "Server should return 400 Bad Request for an invalid request format. Actual response: " + response);
@@ -270,6 +297,11 @@ public class AggregationServerTest {
 
   /**
    * Test if the server correctly recovers from a simulated crash.
+   * 
+   * @throws IOException
+   * @throws InterruptedException
+   * @throws TimeoutException
+   * @throws JsonParseException
    */
   @Test
   public void testServerRecoveryAfterCrash()
@@ -310,6 +342,8 @@ public class AggregationServerTest {
 
   /**
    * Test if the server correctly handles malformed JSON data in PUT requests.
+   * 
+   * @throws IOException
    */
   @Test
   public void testMalformedJsonHandling() throws IOException {
@@ -327,6 +361,9 @@ public class AggregationServerTest {
   /**
    * Test if the server correctly limits stored data to the most recent 20
    * updates.
+   * 
+   * @throws IOException
+   * @throws InterruptedException
    */
   @Test
   public void testDataLimitTo20Updates() throws IOException, InterruptedException {
@@ -369,6 +406,11 @@ public class AggregationServerTest {
     }
   }
 
+  /**
+   * Test if the server correctly handles fully formatted weather data.
+   * 
+   * @throws IOException
+   */
   @Test
   public void testFullyFormattedWeatherData() throws IOException {
     String fullyFormattedData = "{"
@@ -439,6 +481,144 @@ public class AggregationServerTest {
         "GET response should contain the wind speed in knots");
   }
 
+  /**
+   * Test if the Lamport clock increments on each PUT request.
+   * 
+   * @throws IOException
+   */
+  @Test
+  public void testLamportClockIncrementOnPut() throws IOException {
+    String jsonData1 = createJsonData("IDS60901", "Station 1", 20.5);
+    String jsonData2 = createJsonData("IDS60902", "Station 2", 21.0);
+
+    String response1 = sendRequest(createPutRequest(jsonData1));
+    int clock1 = extractLamportClock(response1);
+
+    String response2 = sendRequest(createPutRequest(jsonData2));
+    int clock2 = extractLamportClock(response2);
+
+    assertTrue(clock2 > clock1, "Lamport clock should increment on each PUT request");
+  }
+
+  /**
+   * Test if the Lamport clock increments on each GET request.
+   * 
+   * @throws IOException
+   */
+  @Test
+  public void testLamportClockIncrementOnGet() throws IOException {
+    String jsonData = createJsonData("IDS60901", "Station 1", 20.5);
+    sendRequest(createPutRequest(jsonData));
+
+    String response1 = sendRequest(createGetRequest());
+    int clock1 = extractLamportClock(response1);
+
+    String response2 = sendRequest(createGetRequest());
+    int clock2 = extractLamportClock(response2);
+
+    assertTrue(clock2 > clock1, "Lamport clock should increment on each GET request");
+  }
+
+  /**
+   * Test if the Lamport clock increments on local events (PUT and GET).
+   * 
+   * @throws IOException
+   */
+  @Test
+  public void testLamportClockIncrementOnLocalEvents() throws IOException {
+    String jsonData = createJsonData("IDS60901", "Station 1", 20.5);
+
+    String response1 = sendRequest(createPutRequest(jsonData));
+    int clock1 = extractLamportClock(response1);
+
+    String response2 = sendRequest(createGetRequest());
+    int clock2 = extractLamportClock(response2);
+
+    assertTrue(clock2 > clock1, "Lamport clock should increment on each local event (PUT and GET)");
+  }
+
+  /**
+   * Test if the server correctly synchronizes the Lamport clock when receiving a
+   * higher clock value.
+   * 
+   * @throws IOException
+   */
+  @Test
+  public void testLamportClockSynchronization() throws IOException {
+    String jsonData1 = createJsonData("IDS60901", "Station 1", 20.5);
+    String jsonData2 = createJsonData("IDS60902", "Station 2", 21.0);
+
+    String response1 = sendRequest(createPutRequest(jsonData1));
+    int clock1 = extractLamportClock(response1);
+
+    // Simulate a client with a higher Lamport clock
+    int higherClock = clock1 + 10;
+    String putRequestWithHigherClock = createPutRequestWithClock(jsonData2, higherClock);
+    String response2 = sendRequest(putRequestWithHigherClock);
+    int clock2 = extractLamportClock(response2);
+
+    assertTrue(clock2 > higherClock, "Server should update its Lamport clock when receiving a higher clock value");
+    assertEquals(higherClock + 2, clock2,
+        "Server should set its clock to max(local, received) + 1, then increment for response");
+  }
+
+  /**
+   * Test if the Lamport clock values are unique and correct in a concurrent
+   * environment.
+   * 
+   * @throws InterruptedException
+   */
+  @Test
+  public void testLamportClockConcurrency() throws InterruptedException {
+    int numThreads = 10;
+    CountDownLatch latch = new CountDownLatch(numThreads);
+    Set<Integer> clockValues = new HashSet<>();
+
+    ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+    for (int i = 0; i < numThreads; i++) {
+      final int index = i;
+      executor.submit(() -> {
+        try {
+          String jsonData = createJsonData("IDS6090" + index, "Station " + index, 20.0 + index);
+          String response = sendRequest(createPutRequest(jsonData));
+          int clock = extractLamportClock(response);
+          clockValues.add(clock);
+        } catch (IOException e) {
+          e.printStackTrace();
+        } finally {
+          latch.countDown();
+        }
+      });
+    }
+
+    latch.await(30, TimeUnit.SECONDS);
+    executor.shutdown();
+
+    assertEquals(numThreads, clockValues.size(), "Each request should have a unique Lamport clock value");
+  }
+
+  /**
+   * Creates a PUT request with the given JSON data and Lamport clock value.
+   *
+   * @param jsonData The JSON data to include in the PUT request.
+   * @param clock    The Lamport clock value to include in the PUT request.
+   * @return The formatted PUT request string.
+   */
+  private String createPutRequestWithClock(String jsonData, int clock) {
+    return HTTP_PUT + " " + WEATHER_ENDPOINT + " " + HTTP_VERSION + "\r\n" +
+        CONTENT_TYPE_JSON + "\r\n" +
+        "Lamport-Clock: " + clock + "\r\n" +
+        CONTENT_LENGTH + jsonData.length() + "\r\n\r\n" +
+        jsonData;
+  }
+
+  /**
+   * Sends the given request to the server and returns the response.
+   *
+   * @param request The request to send to the server.
+   * @return The response from the server.
+   * @throws IOException If an I/O error occurs.
+   */
   private String sendRequest(String request) throws IOException {
     try (Socket socket = new Socket(TEST_HOST, TEST_PORT)) {
       socket.setSoTimeout(5000); // 5 second timeout
@@ -470,10 +650,22 @@ public class AggregationServerTest {
     }
   }
 
+  /**
+   * Creates a GET request.
+   *
+   * @return The formatted GET request string.
+   */
   private String createGetRequest() {
-    return HTTP_GET + " " + WEATHER_ENDPOINT + " " + HTTP_VERSION + "\r\n\r\n";
+    return HTTP_GET + " " + WEATHER_ENDPOINT + " " + HTTP_VERSION + "\r\n" +
+        "Lamport-Clock: " + 0 + "\r\n\r\n";
   }
 
+  /**
+   * Creates a PUT request with the given JSON data.
+   *
+   * @param jsonData The JSON data to include in the PUT request.
+   * @return The formatted PUT request string.
+   */
   private String createPutRequest(String jsonData) {
     return HTTP_PUT + " " + WEATHER_ENDPOINT + " " + HTTP_VERSION + "\r\n" +
         CONTENT_TYPE_JSON + "\r\n" +
@@ -481,7 +673,31 @@ public class AggregationServerTest {
         jsonData;
   }
 
+  /**
+   * Creates JSON data for a weather station.
+   *
+   * @param id          The unique identifier for the weather station.
+   * @param name        The name of the weather station.
+   * @param temperature The air temperature at the weather station.
+   * @return The formatted JSON data string.
+   */
   private String createJsonData(String id, String name, double temperature) {
     return String.format("{\"id\":\"%s\",\"name\":\"%s\",\"air_temp\":%.1f}", id, name, temperature);
+  }
+
+  /**
+   * Extracts the Lamport clock value from the server response.
+   *
+   * @param response The response from the server.
+   * @return The Lamport clock value, or -1 if not found.
+   */
+  private int extractLamportClock(String response) {
+    String[] lines = response.split("\r\n");
+    for (String line : lines) {
+      if (line.startsWith("Lamport-Clock:")) {
+        return Integer.parseInt(line.split(":")[1].trim());
+      }
+    }
+    return -1; // Return -1 if the Lamport-Clock header is not found
   }
 }

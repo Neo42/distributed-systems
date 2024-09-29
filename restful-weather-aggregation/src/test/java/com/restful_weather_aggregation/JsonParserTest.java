@@ -7,6 +7,11 @@ import org.json.JSONObject;
 
 public class JsonParserTest {
 
+  /**
+   * Test the fromJson method with valid input.
+   * 
+   * @throws JsonParseException if the input is invalid.
+   */
   @Test
   public void testFromJson_ValidInput() throws JsonParseException {
     String input = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"air_temp\":23.5,\"wind_speed\":\"10km/h\"}";
@@ -18,24 +23,42 @@ public class JsonParserTest {
     assertEquals("10km/h", wd.getData().get("wind_speed"));
   }
 
+  /**
+   * Test the fromJson method with invalid input.
+   * 
+   * @throws JsonParseException if the input is invalid.
+   */
   @Test
   public void testFromJson_InvalidInput() {
     String input = "IDS60901,Adelaide,air_temp:23.5,wind_speed:10km/h";
     assertThrows(JsonParseException.class, () -> JsonParser.fromJson(input));
   }
 
+  /**
+   * Test the fromJson method with an empty value.
+   * 
+   * @throws JsonParseException if the input is invalid.
+   */
   @Test
   public void testFromJson_EmptyValue() {
     String input = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"air_temp\":\"\"}";
     assertThrows(JsonParseException.class, () -> JsonParser.fromJson(input));
   }
 
+  /**
+   * Test the fromJson method with a missing id.
+   * 
+   * @throws JsonParseException if the input is invalid.
+   */
   @Test
   public void testFromJson_MissingId() {
     String input = "{\"name\":\"Adelaide\",\"air_temp\":23.5}";
     assertThrows(JsonParseException.class, () -> JsonParser.fromJson(input));
   }
 
+  /**
+   * Test the toJson method.
+   */
   @Test
   public void testToJson() {
     WeatherData wd = new WeatherData("IDS60901", "Adelaide");
@@ -46,6 +69,9 @@ public class JsonParserTest {
     assertEquals(new JSONObject(expected).toString(), new JSONObject(JsonParser.toJson(wd)).toString());
   }
 
+  /**
+   * Test the toJson method with empty data.
+   */
   @Test
   public void testToJson_EmptyData() {
     WeatherData wd = new WeatherData("IDS60901", "Adelaide");
@@ -53,6 +79,11 @@ public class JsonParserTest {
     assertEquals(new JSONObject(expected).toString(), new JSONObject(JsonParser.toJson(wd)).toString());
   }
 
+  /**
+   * Test the fromJson method with fully formatted data.
+   * 
+   * @throws JsonParseException if the input is invalid.
+   */
   @Test
   public void testFromJson_FullyFormattedData() throws JsonParseException {
     String input = "{" +
