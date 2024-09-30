@@ -99,22 +99,6 @@ public class AggregationServerTest {
   }
 
   /**
-   * Test if the server correctly handles a GET request when no data is available.
-   * 
-   * @throws IOException
-   */
-  @Test
-  public void testGetRequestWithNoData() throws IOException {
-    String getRequest = createGetRequest();
-    String response = sendRequest(getRequest);
-
-    System.out.println("Actual response: " + response);
-
-    assertTrue(response.contains(HTTP_VERSION + " 204 No Content"),
-        "Server should return 204 No Content when no data is available. Actual response: " + response);
-  }
-
-  /**
    * Test if the server correctly handles a PUT request, create a storage file and
    * stores the data.
    * 
@@ -193,8 +177,20 @@ public class AggregationServerTest {
     Thread.sleep(TIMEOUT_SECONDS * 1000);
 
     String getResponse = sendRequest(createGetRequest());
-    assertTrue(getResponse.contains(HTTP_VERSION + " 204 No Content"),
-        "Server should return 204 No Content after data expiration");
+    assertTrue(getResponse.contains(HTTP_VERSION + " 404 Not Found"),
+        "Server should return 404 Not Found after data expiration");
+  }
+
+  /* Test if the server correctly handles a PUT request when no content is sent */
+  @Test
+  public void testPutRequestWithNoContent() throws IOException {
+    String putRequest = "PUT " + WEATHER_ENDPOINT + " " + HTTP_VERSION + "\r\n" +
+        CONTENT_TYPE_JSON + "\r\n" +
+        CONTENT_LENGTH + "0\r\n\r\n";
+
+    String response = sendRequest(putRequest);
+    assertTrue(response.contains(HTTP_VERSION + " 204 No Content"),
+        "Server should return 204 No Content when no content is sent. Actual response: " + response);
   }
 
   /**

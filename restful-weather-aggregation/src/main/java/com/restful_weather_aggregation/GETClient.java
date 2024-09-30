@@ -70,9 +70,6 @@ public class GETClient {
             String responseString = response.toString();
             logger.info("Received response: " + responseString + "\n");
             displayWeatherData(responseString);
-        } else if (responseCode == 204) {
-            logger.info("No content available");
-            System.out.println("No content available");
         } else {
             logger.warning("Error: Server returned status code " + responseCode);
             System.out.println("Error: Server returned status code " + responseCode);

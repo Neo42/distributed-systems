@@ -251,8 +251,8 @@ public class AggregationServer {
         } else {
             logger.info("Weather data map size: " + weatherDataMap.size());
             if (weatherDataMap.isEmpty()) {
-                logger.info("No weather data available. Sending 204 No Content.");
-                sendResponse(out, "204 No Content", null);
+                logger.info("No weather data available. Sending 404 Not Found.");
+                sendResponse(out, "404 Not Found", null);
             } else {
                 logger.info("Weather data available. Sending 200 OK with data.");
                 List<WeatherData> sortedData = new ArrayList<>(recentUpdates);

@@ -3,8 +3,6 @@ package com.restful_weather_aggregation;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-import org.json.JSONObject;
-
 public class WeatherDataTest {
 
     /**
@@ -37,7 +35,7 @@ public class WeatherDataTest {
         wd.addData("air_temp", 23.5);
         wd.addData("wind_speed", "10km/h");
         String expected = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"lamportClock\":0,\"air_temp\":23.5,\"wind_speed\":\"10km/h\"}";
-        assertEquals(new JSONObject(expected).toString(), new JSONObject(wd.toJson()).toString());
+        assertEquals(expected, wd.toJson());
     }
 
     /**
@@ -52,7 +50,7 @@ public class WeatherDataTest {
         assertEquals("IDS60901", wd.getId());
         assertEquals("Adelaide", wd.getName());
         String expected = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"lamportClock\":0,\"air_temp\":23.5,\"wind_speed\":\"10km/h\"}";
-        assertEquals(new JSONObject(expected).toString(), new JSONObject(wd.toJson()).toString());
+        assertEquals(expected, wd.toJson());
     }
 
     /**
@@ -75,7 +73,7 @@ public class WeatherDataTest {
         assertEquals("Adelaide", wd.getName());
         assertEquals(5, wd.getLamportClock());
         String expected = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"lamportClock\":5,\"air_temp\":23.5,\"wind_speed\":\"10km/h\"}";
-        assertEquals(new JSONObject(expected).toString(), new JSONObject(wd.toJson()).toString());
+        assertEquals(expected, wd.toJson());
     }
 
     /**
@@ -101,7 +99,7 @@ public class WeatherDataTest {
         wd.addData("air_temp", 23.5);
         wd.addData("wind_speed", "10km/h");
         String expected = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"lamportClock\":3,\"air_temp\":23.5,\"wind_speed\":\"10km/h\"}";
-        assertEquals(new JSONObject(expected).toString(), new JSONObject(wd.toJson()).toString());
+        assertEquals(expected, wd.toJson());
     }
 
     /**
@@ -111,7 +109,7 @@ public class WeatherDataTest {
     public void testToJson_EmptyData() {
         WeatherData wd = new WeatherData("IDS60901", "Adelaide");
         String expected = "{\"id\":\"IDS60901\",\"name\":\"Adelaide\",\"lamportClock\":0}";
-        assertEquals(new JSONObject(expected).toString(), new JSONObject(wd.toJson()).toString());
+        assertEquals(expected, wd.toJson());
     }
 
     /**
@@ -168,25 +166,25 @@ public class WeatherDataTest {
         assertEquals("IDS60901", wd.getId());
         assertEquals("Adelaide (West Terrace /  ngayirdapira)", wd.getName());
 
-        JSONObject jsonObject = new JSONObject(wd.toJson());
+        String jsonString = wd.toJson();
 
-        assertEquals("IDS60901", jsonObject.getString("id"));
-        assertEquals("Adelaide (West Terrace /  ngayirdapira)", jsonObject.getString("name"));
-        assertEquals(0, jsonObject.getInt("lamportClock"));
-        assertEquals("SA", jsonObject.getString("state"));
-        assertEquals("CST", jsonObject.getString("time_zone"));
-        assertEquals(-34.9, jsonObject.getDouble("lat"), 0.001);
-        assertEquals(138.6, jsonObject.getDouble("lon"), 0.001);
-        assertEquals("15/04:00pm", jsonObject.getString("local_date_time"));
-        assertEquals("20230715160000", jsonObject.getString("local_date_time_full"));
-        assertEquals(13.3, jsonObject.getDouble("air_temp"), 0.001);
-        assertEquals(9.5, jsonObject.getDouble("apparent_t"), 0.001);
-        assertEquals("Partly cloudy", jsonObject.getString("cloud"));
-        assertEquals(5.7, jsonObject.getDouble("dewpt"), 0.001);
-        assertEquals(1023.9, jsonObject.getDouble("press"), 0.001);
-        assertEquals(60, jsonObject.getInt("rel_hum"));
-        assertEquals("S", jsonObject.getString("wind_dir"));
-        assertEquals(15, jsonObject.getInt("wind_spd_kmh"));
-        assertEquals(8, jsonObject.getInt("wind_spd_kt"));
+        assertTrue(jsonString.contains("\"id\":\"IDS60901\""));
+        assertTrue(jsonString.contains("\"name\":\"Adelaide (West Terrace /  ngayirdapira)\""));
+        assertTrue(jsonString.contains("\"lamportClock\":0"));
+        assertTrue(jsonString.contains("\"state\":\"SA\""));
+        assertTrue(jsonString.contains("\"time_zone\":\"CST\""));
+        assertTrue(jsonString.contains("\"lat\":-34.9"));
+        assertTrue(jsonString.contains("\"lon\":138.6"));
+        assertTrue(jsonString.contains("\"local_date_time\":\"15/04:00pm\""));
+        assertTrue(jsonString.contains("\"local_date_time_full\":\"20230715160000\""));
+        assertTrue(jsonString.contains("\"air_temp\":13.3"));
+        assertTrue(jsonString.contains("\"apparent_t\":9.5"));
+        assertTrue(jsonString.contains("\"cloud\":\"Partly cloudy\""));
+        assertTrue(jsonString.contains("\"dewpt\":5.7"));
+        assertTrue(jsonString.contains("\"press\":1023.9"));
+        assertTrue(jsonString.contains("\"rel_hum\":60"));
+        assertTrue(jsonString.contains("\"wind_dir\":\"S\""));
+        assertTrue(jsonString.contains("\"wind_spd_kmh\":15"));
+        assertTrue(jsonString.contains("\"wind_spd_kt\":8"));
     }
 }

@@ -6,13 +6,13 @@ package com.restful_weather_aggregation;
  */
 public class JsonParseException extends Exception {
 
-  /**
-   * Constructor for JsonParseException.
-   * Initializes the exception with a specific error message.
-   *
-   * @param message The error message describing the JSON parsing error.
-   */
-  public JsonParseException(String message) {
-    super(message);
-  }
+    /**
+     * Constructor for JsonParseException.
+     * Initializes the exception with a specific error message.
+     *
+     * @param message The error message describing the JSON parsing error.
+     */
+    public JsonParseException(String message) {
+        super(message);
+    }
 }
